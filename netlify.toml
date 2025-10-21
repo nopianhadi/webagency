@@ -41,7 +41,6 @@
   from = "/*"
   to = "/index.html"
   status = 200
-  conditions = {Role = ["admin"], Country = ["US"]}
 
 # Environment variables (these will be set in Netlify dashboard)
 # VITE_SUPABASE_URL
