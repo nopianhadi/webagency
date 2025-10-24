@@ -41,7 +41,11 @@ import {
   Globe,
   LogOut,
   Quote,
-  Building2
+  Building2,
+  Key,
+  Save,
+  RefreshCw,
+  AlertCircle
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -93,6 +97,13 @@ export default function Admin() {
   const [isCreateSettingOpen, setIsCreateSettingOpen] = useState(false);
   const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false);
   const [isCreateTestimonialOpen, setIsCreateTestimonialOpen] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [apiKeys, setApiKeys] = useState({
+    openai: "",
+    anthropic: "",
+    gemini: ""
+  });
+  const [isSavingApiKey, setIsSavingApiKey] = useState(false);
 
   // Projects Management
   const { data: projects, isLoading: projectsLoading } = useQuery<Project[]>({
@@ -212,6 +223,20 @@ export default function Admin() {
         .order('key');
 
       if (error) throw new Error(error.message);
+      
+      // Load API keys from settings
+      if (data) {
+        const openaiKey = data.find(s => s.key === 'openai_api_key');
+        const anthropicKey = data.find(s => s.key === 'anthropic_api_key');
+        const geminiKey = data.find(s => s.key === 'gemini_api_key');
+        
+        setApiKeys({
+          openai: openaiKey?.value as string || "",
+          anthropic: anthropicKey?.value as string || "",
+          gemini: geminiKey?.value as string || ""
+        });
+      }
+      
       return data || [];
     },
   });
@@ -644,6 +669,49 @@ export default function Admin() {
         setLocation("/");
       }
     });
+  };
+
+  // API Key Management
+  const handleSaveApiKeys = async () => {
+    setIsSavingApiKey(true);
+    try {
+      const apiKeySettings = [
+        { key: 'openai_api_key', value: apiKeys.openai, description: 'OpenAI API Key untuk integrasi AI' },
+        { key: 'anthropic_api_key', value: apiKeys.anthropic, description: 'Anthropic Claude API Key' },
+        { key: 'gemini_api_key', value: apiKeys.gemini, description: 'Google Gemini API Key' }
+      ];
+
+      for (const setting of apiKeySettings) {
+        const existing = settings?.find(s => s.key === setting.key);
+        
+        if (existing) {
+          // Update existing
+          await supabase
+            .from('settings')
+            .update({ value: setting.value, description: setting.description })
+            .eq('id', existing.id);
+        } else {
+          // Insert new
+          await supabase
+            .from('settings')
+            .insert([setting]);
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
+      toast({ 
+        title: "API Keys berhasil disimpan!",
+        description: "Konfigurasi AI telah diperbarui."
+      });
+    } catch (error) {
+      toast({ 
+        title: "Gagal menyimpan API Keys",
+        description: error instanceof Error ? error.message : "Terjadi kesalahan",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSavingApiKey(false);
+    }
   };
 
   // Team Mutations
@@ -1784,6 +1852,152 @@ export default function Admin() {
                 </DialogContent>
               </Dialog>
             </div>
+
+            {/* API Keys Management */}
+            <Card className="border-2 border-blue-100 bg-gradient-to-br from-blue-50 to-white animate-fade-in">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-blue-100 p-3 rounded-xl">
+                    <Key className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Konfigurasi API Keys AI</h3>
+                    <p className="text-sm text-gray-600">Kelola API keys untuk integrasi layanan AI</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {/* OpenAI API Key */}
+                  <div className="space-y-2">
+                    <Label htmlFor="openai_key" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                      OpenAI API Key
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="openai_key"
+                        type={showApiKey ? "text" : "password"}
+                        value={apiKeys.openai}
+                        onChange={(e) => setApiKeys({ ...apiKeys, openai: e.target.value })}
+                        placeholder="sk-..."
+                        className="border-gray-300 pr-10 font-mono text-sm"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                      >
+                        {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-gray-500">Untuk ChatGPT, GPT-4, dan model OpenAI lainnya</p>
+                  </div>
+
+                  {/* Anthropic API Key */}
+                  <div className="space-y-2">
+                    <Label htmlFor="anthropic_key" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                      Anthropic Claude API Key
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="anthropic_key"
+                        type={showApiKey ? "text" : "password"}
+                        value={apiKeys.anthropic}
+                        onChange={(e) => setApiKeys({ ...apiKeys, anthropic: e.target.value })}
+                        placeholder="sk-ant-..."
+                        className="border-gray-300 pr-10 font-mono text-sm"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                      >
+                        {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-gray-500">Untuk Claude AI dan model Anthropic</p>
+                  </div>
+
+                  {/* Gemini API Key */}
+                  <div className="space-y-2">
+                    <Label htmlFor="gemini_key" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                      Google Gemini API Key
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="gemini_key"
+                        type={showApiKey ? "text" : "password"}
+                        value={apiKeys.gemini}
+                        onChange={(e) => setApiKeys({ ...apiKeys, gemini: e.target.value })}
+                        placeholder="AIza..."
+                        className="border-gray-300 pr-10 font-mono text-sm"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                      >
+                        {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-gray-500">Untuk Google Gemini Pro dan model Google AI</p>
+                  </div>
+
+                  <div className="flex gap-3 pt-4 border-t border-gray-200">
+                    <Button
+                      onClick={handleSaveApiKeys}
+                      disabled={isSavingApiKey}
+                      className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      {isSavingApiKey ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          Menyimpan...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          Simpan API Keys
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setApiKeys({ openai: "", anthropic: "", gemini: "" });
+                        setShowApiKey(false);
+                      }}
+                      className="gap-2 border-gray-300"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Reset
+                    </Button>
+                  </div>
+
+                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="flex gap-2">
+                      <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm text-yellow-800">
+                        <p className="font-semibold mb-1">Keamanan API Key</p>
+                        <ul className="list-disc list-inside space-y-1 text-xs">
+                          <li>Jangan bagikan API key Anda kepada siapa pun</li>
+                          <li>API key disimpan dengan enkripsi di database</li>
+                          <li>Rotasi API key secara berkala untuk keamanan maksimal</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
 
             <Card className="glass-card animate-fade-in">
               <div className="p-6">

@@ -1,36 +1,26 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SolutionWorkflow from "@/components/ai/SolutionWorkflow";
 import BusinessProblemsGuide from "@/components/ai/BusinessProblemsGuide";
 import SolutionFAQ from "@/components/ai/SolutionFAQ";
 import EnhancedCTA from "@/components/ai/EnhancedCTA";
-import CostBreakdown from "@/components/ai/CostBreakdown";
 import BeforeAfterComparison from "@/components/ai/BeforeAfterComparison";
-import ROICalculator from "@/components/ai/ROICalculator";
 import CaseStudies from "@/components/ai/CaseStudies";
-import VideoDemo from "@/components/ai/VideoDemo";
-import {
-  Sparkles,
-  Brain,
-  Send,
-  CheckCircle2,
-  TrendingUp,
-  Users,
-  BarChart3,
-  Zap,
-  MessageSquare,
-  ArrowRight,
-  Lightbulb,
-  Target,
-  DollarSign,
-  ChevronDown,
-  ChevronUp,
-  HelpCircle
+import { 
+  Sparkles, Brain, Send, CheckCircle2, TrendingUp, Users, 
+  BarChart3, Zap, MessageSquare, ArrowRight, Lightbulb, 
+  Target, DollarSign, ChevronDown, ChevronUp, HelpCircle, 
+  Loader2, Search, BarChart2, PieChart, Clock, AlertCircle, Package2, FileText
 } from "lucide-react";
+
+// Types
+type Complexity = 'Low' | 'Medium' | 'High';
 
 interface Solution {
   type: string;
@@ -40,28 +30,167 @@ interface Solution {
   benefits: string[];
   estimatedROI: string;
   timeline: string;
-  complexity: 'Low' | 'Medium' | 'High';
+  complexity: Complexity;
 }
 
-export default function AIBusinessSolver() {
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  show: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { 
+      duration: 0.5,
+      ease: [0.16, 1, 0.3, 1]
+    } 
+  },
+};
+
+// Utility functions
+const getComplexityBadge = (complexity: Complexity) => {
+  const styles = {
+    Low: 'bg-green-100 text-green-800',
+    Medium: 'bg-yellow-100 text-yellow-800',
+    High: 'bg-red-100 text-red-800',
+  };
+  
+  return (
+    <span className={`text-xs px-2.5 py-0.5 rounded-full ${styles[complexity]}`}>
+      {complexity} Complexity
+    </span>
+  );
+};
+
+const getTimelineBadge = (timeline: string) => (
+  <div className="flex items-center text-sm text-gray-600">
+    <Clock className="w-4 h-4 mr-1" />
+    <span>{timeline}</span>
+  </div>
+);
+
+const getROIBadge = (roi: string) => (
+  <div className="flex items-center text-sm font-medium text-green-600">
+    <TrendingUp className="w-4 h-4 mr-1" />
+    <span>ROI: {roi}</span>
+  </div>
+);
+
+const AIBusinessSolver = () => {
+  // State
   const [problem, setProblem] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [solutions, setSolutions] = useState<Solution[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [expandedWorkflow, setExpandedWorkflow] = useState<string | null>(null);
   const [showProblemsGuide, setShowProblemsGuide] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState<'solutions' | 'workflow' | 'case-studies'>('solutions');
+  
+  // Example problems for the guide
+  const exampleProblems = [
+    "Saya kesulitan mengelola stok dan sering kehabisan barang di toko online saya",
+    "Saya butuh sistem untuk mengelola data pelanggan dengan lebih baik",
+    "Saya ingin membuat laporan keuangan yang lebih baik dan akurat",
+    "Saya ingin mengotomatisasi proses penjualan dan pembelian"
+  ];
+
+  // Toggle workflow expansion
+  const toggleWorkflow = useCallback((solutionType: string) => {
+    setExpandedWorkflow(prev => prev === solutionType ? null : solutionType);
+  }, []);
+
+  // Handle form submission
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    analyzeProblem();
+  };
+
+  // Handle example problem click
+  const handleExampleClick = (example: string) => {
+    setProblem(example);
+    setShowProblemsGuide(false);
+  };
 
   // AI Problem Analysis & Solution Recommendation
-  const analyzeProblem = () => {
+  const analyzeProblem = useCallback(() => {
     if (!problem.trim()) return;
 
     setIsAnalyzing(true);
+    setIsSubmitting(true);
     setShowResults(false);
+    setActiveTab('solutions');
 
-    // Simulate AI processing
+    // Simulate AI processing with a more realistic delay
     setTimeout(() => {
       const problemLower = problem.toLowerCase();
       const recommendedSolutions: Solution[] = [];
+
+      // Sample solution based on problem keywords
+      if (problemLower.includes('stok') || problemLower.includes('inventory')) {
+        recommendedSolutions.push({
+          type: "inventory",
+          title: "Sistem Manajemen Inventori Otomatis",
+          description: 'Solusi terintegrasi untuk mengelola stok, pemesanan, dan prediksi kebutuhan inventori',
+          icon: <Package2 className="w-6 h-6" />,
+          benefits: [
+            'Prediksi stok akurat hingga 95%',
+            'Notifikasi stok menipis otomatis',
+            'Integrasi dengan sistem POS dan e-commerce',
+            'Laporan analisis tren penjualan'
+          ],
+          estimatedROI: '30-50% dalam 6 bulan',
+          timeline: 'Implementasi 2-4 minggu',
+          complexity: 'Medium'
+        });
+      }
+
+      if (problemLower.includes('pelanggan') || problemLower.includes('customer')) {
+        recommendedSolutions.push({
+          type: "crm",
+          title: "Sistem Manajemen Hubungan Pelanggan (CRM)",
+          description: 'Kelola interaksi dengan pelanggan dan tingkatkan retensi pelanggan',
+          icon: <Users className="w-6 h-6" />,
+          benefits: [
+            'Database pelanggan terpusat',
+            'Pelacakan interaksi pelanggan',
+            'Analisis perilaku pelanggan',
+            'Otomatisasi pemasaran'
+          ],
+          estimatedROI: '40-60% dalam 6 bulan',
+          timeline: 'Implementasi 3-5 minggu',
+          complexity: 'Medium'
+        });
+      }
+
+      // Add more solution types based on problem keywords
+      if (recommendedSolutions.length === 0) {
+        recommendedSolutions.push({
+          type: "analytics",
+          title: "Dashboard Analitik Bisnis",
+          description: 'Visualisasi data real-time untuk pengambilan keputusan yang lebih baik',
+          icon: <BarChart2 className="w-6 h-6" />,
+          benefits: [
+            'Laporan penjualan real-time',
+            'Analisis tren dan prediksi',
+            'Custom dashboard sesuai kebutuhan',
+            'Akses dari perangkat apapun'
+          ],
+          estimatedROI: '20-40% peningkatan efisiensi',
+          timeline: 'Implementasi 1-2 minggu',
+          complexity: 'Low'
+        });
+      }
 
       // Data Management Problems
       if (problemLower.includes('data') || problemLower.includes('laporan') || problemLower.includes('informasi') || problemLower.includes('tracking')) {
@@ -171,11 +300,11 @@ export default function AIBusinessSolver() {
           description: "Solusi lengkap untuk mengelola stok barang secara real-time, otomatis reorder saat stock menipis, dan optimasi level inventory supaya tidak overstock atau kehabisan barang. Sistem ini akan integrasikan semua gudang/toko Anda dalam satu dashboard terpusat dengan barcode scanning untuk input cepat dan akurat.",
           icon: <Target className="w-6 h-6" />,
           benefits: [
-            "📊 Real-time Stock Tracking - Lihat stock di semua lokasi (gudang, toko, cabang) secara real-time di dashboard. Setiap transaksi (masuk/keluar/transfer) langsung ter-update otomatis",
-            "🔔 Automated Reorder Alerts - Sistem akan otomatis kirim alert (email/WhatsApp) saat stock mencapai minimum level. Bahkan bisa auto-generate Purchase Order ke supplier",
-            "🏢 Multi-location Management - Kelola inventory di berbagai lokasi sekaligus. Transfer stock antar lokasi, lihat stock per lokasi atau total, semua dari satu dashboard",
-            "📱 Barcode/QR Scanning - Input stock cukup scan barcode pakai HP. Cepat, akurat, dan minimize human error. Label barcode bisa print sendiri dari sistem",
-            "📈 Stock Analytics & Forecasting - Dashboard analytics untuk monitor turnover rate, aging stock, dan forecast demand 1-3 bulan ke depan based on historical data"
+            "Real-time Stock Tracking - Lihat stock di semua lokasi (gudang, toko, cabang) secara real-time di dashboard. Setiap transaksi (masuk/keluar/transfer) langsung ter-update otomatis",
+            "Automated Reorder Alerts - Sistem akan otomatis kirim alert (email/WhatsApp) saat stock mencapai minimum level. Bahkan bisa auto-generate Purchase Order ke supplier",
+            "Multi-location Management - Kelola inventory di berbagai lokasi sekaligus. Transfer stock antar lokasi, lihat stock per lokasi atau total, semua dari satu dashboard",
+            "Barcode/QR Scanning - Input stock cukup scan barcode pakai HP. Cepat, akurat, dan minimize human error. Label barcode bisa print sendiri dari sistem",
+            "Stock Analytics & Forecasting - Dashboard analytics untuk monitor turnover rate, aging stock, dan forecast demand 1-3 bulan ke depan based on historical data"
           ],
           estimatedROI: "300-500% dalam 12 bulan (hemat dari tidak overstock + tidak kehilangan sales karena stockout)",
           timeline: "6-10 minggu (tergantung jumlah SKU dan kompleksitas integrasi)",
@@ -226,353 +355,299 @@ export default function AIBusinessSolver() {
       setSolutions(recommendedSolutions);
       setIsAnalyzing(false);
       setShowResults(true);
-    }, 2500 + Math.random() * 1500); // 2.5-4 seconds
-  };
-
-  const exampleProblems = [
-    "Sulit tracking data penjualan dan membuat laporan",
-    "Manajemen customer tidak terorganisir",
-    "Banyak proses manual yang memakan waktu",
-    "Kesulitan monitor inventory dan stock barang"
-  ];
+      setIsSubmitting(false);
+      
+      // Scroll to results
+      setTimeout(() => {
+        const resultsElement = document.getElementById('solutions-section');
+        if (resultsElement) {
+          resultsElement.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }, 2000);
+  }, [problem]);
 
   return (
-    <section className="py-20 bg-gradient-to-br from-blue-50 via-white to-purple-50 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-20 left-20 w-96 h-96 bg-blue-500 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-      </div>
-
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-12"
+    <div className="py-12 px-4 md:px-6 max-w-6xl mx-auto">
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="text-center mb-16"
+      >
+        <Badge 
+          variant="outline" 
+          className="mb-4 bg-blue-50 text-blue-600 border-blue-200 px-3 py-1.5 text-sm font-medium"
         >
-          <Badge className="mb-4 bg-gradient-to-r from-blue-50 to-purple-50 text-primary-600 border-primary-200/50">
-            <Brain className="w-3 h-3 mr-1" />
-            AI Business Consultant
-          </Badge>
-          
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
-            Punya Masalah{" "}
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Bisnis?
-            </span>
-          </h2>
-          
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Ceritakan masalah bisnis Anda, dan AI kami akan recommend solusi aplikasi yang tepat
-          </p>
-        </motion.div>
+          <Sparkles className="w-4 h-4 mr-2" />
+          AI-Powered Business Solutions
+        </Badge>
+        <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          Solusi AI untuk Bisnis Anda
+        </h1>
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+          Jelaskan tantangan bisnis Anda dan dapatkan rekomendasi solusi AI yang disesuaikan untuk meningkatkan efisiensi dan pertumbuhan bisnis Anda.
+        </p>
+      </motion.div>
 
-        {/* Main Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.2 }}
-        >
-          <Card className="p-8 shadow-2xl bg-white/80 backdrop-blur-sm border-2">
-            {/* Input Section */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Ceritakan masalah bisnis Anda:
-              </label>
+      {/* Problem Input Section */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="max-w-3xl mx-auto mb-16"
+      >
+        <form onSubmit={handleSubmit}>
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl opacity-75 blur-sm group-hover:opacity-100 transition-all duration-300"></div>
+            <div className="relative">
               <Textarea
                 value={problem}
                 onChange={(e) => setProblem(e.target.value)}
-                placeholder="Contoh: Saya kesulitan tracking penjualan dan membuat laporan, data masih manual di Excel dan sering error..."
-                className="min-h-[120px] text-base resize-none"
-                disabled={isAnalyzing}
+                placeholder="Contoh: Saya kesulitan mengelola stok dan sering kehabisan barang di toko online saya..."
+                className={cn(
+                  "min-h-[160px] text-base pr-32 border-2 border-transparent",
+                  "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500",
+                  "group-hover:border-blue-400 transition-all duration-300 text-gray-800",
+                  "text-lg placeholder-gray-400"
+                )}
+                disabled={isAnalyzing || isSubmitting}
+                maxLength={1000}
               />
-              
-              <div className="mt-3 space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-xs text-gray-500">Contoh masalah:</span>
-                  {exampleProblems.map((example, idx) => (
-                    <Button
-                      key={idx}
-                      size="sm"
-                      variant="outline"
-                      className="text-xs h-7"
-                      onClick={() => setProblem(example)}
-                      disabled={isAnalyzing}
-                    >
-                      {example}
-                    </Button>
-                  ))}
-                </div>
-                
-                {/* Problems Guide Toggle */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-blue-600 hover:text-blue-700"
-                  onClick={() => setShowProblemsGuide(!showProblemsGuide)}
-                >
-                  <HelpCircle className="w-3 h-3 mr-1" />
-                  {showProblemsGuide ? 'Sembunyikan' : 'Lihat'} Daftar Lengkap Masalah Bisnis yang Bisa Diselesaikan
-                  {showProblemsGuide ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
-                </Button>
-              </div>
+              <Button
+                type="submit"
+                className={cn(
+                  "absolute right-3 bottom-3 transition-all duration-300 shadow-lg",
+                  "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700",
+                  "transform hover:scale-105 active:scale-95",
+                  !problem.trim() || isAnalyzing || isSubmitting ? "opacity-70 cursor-not-allowed" : ""
+                )}
+                disabled={!problem.trim() || isAnalyzing || isSubmitting}
+                size="lg"
+              >
+                {isAnalyzing || isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Menganalisis...
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-4 h-4 mr-2" />
+                    Analisis Masalah
+                  </>
+                )}
+              </Button>
             </div>
-            
-            {/* Business Problems Guide */}
-            <AnimatePresence>
-              {showProblemsGuide && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="mb-6"
-                >
-                  <BusinessProblemsGuide />
-                </motion.div>
+          </div>
+          
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setShowProblemsGuide(!showProblemsGuide)}
+              className={cn(
+                "text-blue-600 hover:text-blue-700 transition-colors flex items-center group text-sm",
+                "bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg"
               )}
-            </AnimatePresence>
-
-            {/* Analyze Button */}
-            <Button
-              onClick={analyzeProblem}
-              disabled={!problem.trim() || isAnalyzing}
-              size="lg"
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg"
+              aria-expanded={showProblemsGuide}
+              aria-controls="problems-guide"
             >
-              {isAnalyzing ? (
-                <>
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>AI Sedang Menganalisis...</span>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-5 h-5 mr-2" />
-                  Analisis dengan AI
-                  <Send className="w-5 h-5 ml-2" />
-                </>
-              )}
-            </Button>
-          </Card>
-        </motion.div>
-
-        {/* AI Analysis Progress */}
+              <HelpCircle className="w-4 h-4 mr-1.5 transition-transform group-hover:scale-110" />
+              <span className="border-b border-transparent hover:border-blue-600">
+                Contoh Masalah Bisnis Umum
+              </span>
+            </button>
+            
+            <div className={cn(
+              "text-sm px-3 py-1 rounded-full",
+              problem.length > 800 ? "bg-amber-50 text-amber-700" : "text-gray-500"
+            )}>
+              {problem.length}/1000 karakter
+            </div>
+          </div>
+        </form>
+        
+        {/* Example Problems */}
         <AnimatePresence>
-          {isAnalyzing && (
+          {showProblemsGuide && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="mt-6"
+              transition={{ duration: 0.3 }}
+              className="mt-4 space-y-2 overflow-hidden"
+              id="problems-guide"
             >
-              <Card className="p-6 bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <div className="w-12 h-12 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin" />
-                      <Brain className="w-6 h-6 text-blue-600 absolute inset-0 m-auto" />
+              <p className="text-sm text-gray-500 mb-2">Klik untuk menggunakan contoh:</p>
+              <div className="space-y-2">
+                {exampleProblems.map((example, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="cursor-pointer text-left p-3 bg-gray-50 hover:bg-blue-50 rounded-lg border border-gray-100 hover:border-blue-200 transition-colors"
+                    onClick={() => handleExampleClick(example)}
+                  >
+                    <div className="flex items-start">
+                      <Lightbulb className="w-4 h-4 text-yellow-500 mt-0.5 mr-2 flex-shrink-0" />
+                      <span className="text-sm text-gray-700">{example}</span>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-lg">AI Menganalisis Masalah Anda...</h3>
-                      <p className="text-sm text-gray-600">Memproses dan mencari solusi terbaik</p>
-                    </div>
-                  </div>
-
-                  {/* Progress Steps */}
-                  <div className="space-y-3">
-                    {['Memahami masalah bisnis', 'Matching dengan solusi database', 'Menghitung ROI & timeline', 'Generating recommendations'].map((step, idx) => (
-                      <motion.div
-                        key={step}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: idx * 0.5 }}
-                        className="flex items-center gap-2"
-                      >
-                        <CheckCircle2 className="w-4 h-4 text-green-600" />
-                        <span className="text-sm">{step}</span>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              </Card>
+                  </motion.div>
+                ))}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
+      </motion.div>
 
-        {/* Solutions Display */}
-        <AnimatePresence>
-          {showResults && solutions.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="mt-8 space-y-6"
-            >
-              {/* Results Header */}
-              <Card className="p-6 bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="w-8 h-8 text-green-600" />
-                  <div>
-                    <h3 className="font-bold text-xl">Analisis Selesai!</h3>
-                    <p className="text-gray-600">AI menemukan {solutions.length} solusi yang cocok untuk masalah Anda</p>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Solutions Grid */}
-              <div className="grid md:grid-cols-2 gap-6">
-                {solutions.map((solution, index) => (
-                  <motion.div
-                    key={solution.type}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.2 }}
-                  >
-                    <Card className="p-6 h-full hover:shadow-2xl transition-all duration-300 border-2 hover:border-primary-300">
-                      <div className="flex items-start gap-4 mb-4">
-                        <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 text-white">
-                          {solution.icon}
-                        </div>
-                        <div className="flex-1">
-                          <Badge className="mb-2">{solution.type}</Badge>
-                          <h3 className="font-bold text-lg mb-2">{solution.title}</h3>
-                          <p className="text-sm text-gray-600">{solution.description}</p>
-                        </div>
+      {/* Results Section */}
+      {showResults && (
+        <motion.div 
+          id="solutions-section"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mt-16"
+        >
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Solusi yang Direkomendasikan
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Berdasarkan analisis kami, berikut solusi yang dapat membantu mengatasi tantangan bisnis Anda
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-8">
+            {solutions.map((solution, index) => (
+              <motion.div
+                key={solution.type}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.15 }}
+                className="h-full"
+              >
+                <Card className="h-full overflow-hidden border-2 hover:shadow-xl transition-all duration-300 hover:border-blue-300">
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+                        {solution.icon}
                       </div>
-
-                      {/* Benefits */}
-                      <div className="mb-4">
-                        <h4 className="font-semibold text-sm mb-2">Key Benefits:</h4>
-                        <ul className="space-y-1">
-                          {solution.benefits.map((benefit, idx) => (
-                            <li key={idx} className="text-sm text-gray-600 flex items-start gap-2">
-                              <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                              <span>{benefit}</span>
+                      {getComplexityBadge(solution.complexity)}
+                    </div>
+                    
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{solution.title}</h3>
+                    <p className="text-gray-600 mb-6">{solution.description}</p>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+                          <Zap className="w-4 h-4 text-yellow-500 mr-2" />
+                          Manfaat Utama
+                        </h4>
+                        <ul className="space-y-3">
+                          {solution.benefits.map((benefit, i) => (
+                            <li key={i} className="flex items-start">
+                              <CheckCircle2 className="w-5 h-5 text-green-500 mr-2.5 mt-0.5 flex-shrink-0" />
+                              <span className="text-gray-700">{benefit}</span>
                             </li>
                           ))}
                         </ul>
                       </div>
-
-                      {/* Metrics */}
-                      <div className="grid grid-cols-3 gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
-                        <div>
-                          <p className="text-xs text-gray-500">Est. ROI</p>
-                          <p className="text-sm font-bold text-green-600">{solution.estimatedROI}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Timeline</p>
-                          <p className="text-sm font-bold">{solution.timeline}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Complexity</p>
-                          <Badge variant={solution.complexity === 'Low' ? 'default' : solution.complexity === 'Medium' ? 'secondary' : 'destructive'} className="text-xs">
-                            {solution.complexity}
-                          </Badge>
+                      
+                      <div className="pt-4 mt-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-4">
+                        <div className="flex items-center space-x-4">
+                          {getTimelineBadge(solution.timeline)}
+                          {getROIBadge(solution.estimatedROI)}
                         </div>
                       </div>
 
-                      {/* Workflow Toggle */}
-                      <Button
-                        className="w-full mb-3"
-                        variant="outline"
-                        onClick={() => setExpandedWorkflow(expandedWorkflow === solution.type ? null : solution.type)}
-                      >
-                        {expandedWorkflow === solution.type ? (
-                          <>
-                            <ChevronUp className="w-4 h-4 mr-2" />
-                            Sembunyikan Alur Kerja
-                          </>
-                        ) : (
-                          <>
-                            <ChevronDown className="w-4 h-4 mr-2" />
-                            Lihat Alur Penyelesaian Masalah
-                          </>
-                        )}
-                      </Button>
+                      {/* Workflow Toggle and Display */}
+                      <div className="mt-6">
+                        <Button 
+                          className="w-full group" 
+                          size="lg"
+                          variant="outline"
+                          onClick={() => toggleWorkflow(solution.type)}
+                        >
+                          {expandedWorkflow === solution.type ? (
+                            <>
+                              <ChevronUp className="w-4 h-4 mr-2" />
+                              Sembunyikan Alur Kerja
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="w-4 h-4 mr-2" />
+                              Lihat Alur Penyelesaian Masalah
+                            </>
+                          )}
+                        </Button>
 
-                      {/* Workflow Display */}
-                      <AnimatePresence>
-                        {expandedWorkflow === solution.type && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            <SolutionWorkflow solutionType={solution.type} />
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                        <AnimatePresence>
+                          {expandedWorkflow === solution.type && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.3 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="pt-6 mt-4 border-t border-gray-100">
+                                <h4 className="font-semibold text-gray-800 mb-4">Tahapan Implementasi</h4>
+                                <SolutionWorkflow solutionType={solution.type} />
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
 
-                      {/* CTA */}
-                      <Button
-                        className="w-full mt-3"
-                        variant="default"
-                        asChild
-                      >
-                        <a href={`https://wa.me/62895406181407?text=Halo, saya tertarik dengan ${solution.title}. Bisa diskusi lebih lanjut?`} target="_blank" rel="noopener noreferrer">
-                          Diskusi Solusi Ini
-                          <ArrowRight className="w-4 h-4 ml-2" />
-                        </a>
-                      </Button>
-                    </Card>
-                  </motion.div>
-                ))}
-              </div>
+        {/* Before/After Comparison - Show visual impact */}
+        {solutions.length > 0 && (
+          <div className="mt-16">
+            <BeforeAfterComparison solutionType={solutions[0].type} />
+          </div>
+        )}
 
-              {/* Video Demo - Show first for engagement */}
-              {solutions.length > 0 && (
-                <VideoDemo solutionType={solutions[0].type} />
-              )}
+        {/* Case Studies - Social proof */}
+        {solutions.length > 0 && (
+          <div className="mt-16">
+            <CaseStudies solutionType={solutions[0].type} />
+          </div>
+        )}
 
-              {/* Before/After Comparison - Show visual impact */}
-              {solutions.length > 0 && (
-                <BeforeAfterComparison solutionType={solutions[0].type} />
-              )}
+        {/* Enhanced CTA - Better than old Final CTA */}
+        <div className="mt-16">
+          <EnhancedCTA />
+        </div>
 
-              {/* ROI Calculator - Interactive engagement */}
-              {solutions.length > 0 && (
-                <ROICalculator solutionType={solutions[0].type} />
-              )}
+        {/* FAQ Section */}
+        <div className="mt-16">
+          <SolutionFAQ />
+        </div>
 
-              {/* Case Studies - Social proof */}
-              {solutions.length > 0 && (
-                <CaseStudies solutionType={solutions[0].type} />
-              )}
-
-              {/* Cost Breakdown - Show for primary solution */}
-              {solutions.length > 0 && (
-                <CostBreakdown solutionType={solutions[0].type} />
-              )}
-
-              {/* Enhanced CTA - Better than old Final CTA */}
-              <EnhancedCTA />
-
-              {/* FAQ Section */}
-              <SolutionFAQ />
-
-              {/* Try Again */}
-              <div className="text-center">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowResults(false);
-                    setProblem("");
-                    setSolutions([]);
-                  }}
-                >
-                  Coba Masalah Lain
-                </Button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </section>
+        {/* Try Again */}
+        <div className="text-center mt-16">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setShowResults(false);
+              setProblem("");
+              setSolutions([]);
+            }}
+          >
+            Coba Masalah Lain
+          </Button>
+        </div>
+      </motion.div>
+    )}
+    </div>
   );
-}
+};
+
+export default AIBusinessSolver;

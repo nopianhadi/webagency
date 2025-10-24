@@ -13,6 +13,7 @@ import type { Project } from "@shared/schema";
 import { NoProjectsEmptyState, NoResultsEmptyState } from "@/components/ui/empty-state";
 import { DataLoadErrorState } from "@/components/ui/error-state";
 import AISmartSearch from "@/components/ai/AISmartSearch";
+import { LazyImage } from "@/components/LazyImage";
 
 export default function ProjectsShowcase() {
   const [, setLocation] = useLocation();
@@ -150,6 +151,16 @@ export default function ProjectsShowcase() {
           <p className="text-xs sm:text-sm md:text-base text-muted-foreground max-w-2xl mx-auto px-4">
             Lihat proyek-proyek yang telah saya kembangkan untuk berbagai industri
           </p>
+          <div className="mt-4 flex justify-center">
+            <Button
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md"
+              asChild
+              data-testid="button-contact-me"
+            >
+              <a href="/contact">Hubungi Saya</a>
+            </Button>
+          </div>
         </div>
 
         {/* Search and Sort Controls */}
@@ -258,15 +269,15 @@ export default function ProjectsShowcase() {
             {filteredProjects?.map((project, projectIndex) => (
               <Card
                 key={project.id}
-                className="glass-card-mobile overflow-hidden animate-slide-up hover:scale-105 transition-all duration-300 group cursor-pointer rounded-lg sm:rounded-xl"
+                className="glass-card-mobile overflow-hidden animate-slide-up hover:scale-105 transition-all duration-300 group cursor-pointer rounded-lg sm:rounded-xl h-full flex flex-col"
                 style={{ animationDelay: `${projectIndex * 0.05}s` }}
                 onClick={() => setLocation(`/project/${project.id}`)}
               >
                 <div className="aspect-video relative overflow-hidden bg-muted">
-                  <img
-                    src={project.image}
+                  <LazyImage
+                    src={project.image || ''}
                     alt={project.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex gap-1 sm:gap-1.5 md:gap-2">
@@ -329,7 +340,7 @@ export default function ProjectsShowcase() {
                   </div>
                 </div>
 
-                <div className="p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4">
+                <div className="p-3 sm:p-4 md:p-6 flex-1 flex flex-col justify-between">
                   <div className="space-y-1 sm:space-y-1.5 md:space-y-2">
                     <h4 className="text-sm sm:text-base md:text-lg font-bold group-hover:text-primary transition-colors duration-300">
                       {project.title}
@@ -339,7 +350,7 @@ export default function ProjectsShowcase() {
                     </p>
                   </div>
 
-                  <div className="flex flex-wrap gap-1 sm:gap-1.5 md:gap-2">
+                  <div className="flex flex-wrap gap-1 sm:gap-1.5 md:gap-2 mt-3">
                     {project.techStack && project.techStack.slice(0, 4).map((tech: string, idx: number) => (
                       <Badge key={idx} variant="outline" className="text-[9px] sm:text-[10px] md:text-xs glass animate-fade-in px-1.5 py-0.5 sm:px-2 sm:py-1" style={{ animationDelay: `${idx * 0.1}s` }}>
                         {tech}
@@ -376,11 +387,11 @@ export default function ProjectsShowcase() {
                   onClick={() => setLocation(`/project/${project.id}`)}
                 >
                   <div className="aspect-video relative overflow-hidden bg-muted">
-                    <img
-                      src={project.image}
-                      alt={project.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
+                    <LazyImage
+                          src={project.image || ''}
+                          alt={project.title}
+                          className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-500"
+                        />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <div className="absolute top-3 right-3 flex gap-2">
                       {project.featured === 1 && (
@@ -442,29 +453,29 @@ export default function ProjectsShowcase() {
                     </div>
                   </div>
 
-                  <div className="card-mobile space-y-4">
-                    <div className="space-y-2">
-                      <h4 className="text-mobile-base font-bold group-hover:text-primary transition-colors duration-300">
-                        {project.title}
-                      </h4>
-                      <p className="text-mobile-sm text-muted-foreground line-clamp-2 group-hover:text-slate-600 transition-colors duration-300">
-                        {project.description}
-                      </p>
-                    </div>
+                  <div className="p-3 sm:p-4 md:p-6 flex-1 flex flex-col justify-between card-mobile space-y-4">
+                      <div className="space-y-2">
+                        <h4 className="text-mobile-base font-bold group-hover:text-primary transition-colors duration-300">
+                          {project.title}
+                        </h4>
+                        <p className="text-mobile-sm text-muted-foreground line-clamp-2 group-hover:text-slate-600 transition-colors duration-300">
+                          {project.description}
+                        </p>
+                      </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      {project.techStack && project.techStack.slice(0, 4).map((tech: string, idx: number) => (
-                        <Badge key={idx} variant="outline" className="text-xs glass animate-fade-in badge-mobile" style={{ animationDelay: `${idx * 0.1}s` }}>
-                          {tech}
-                        </Badge>
-                      ))}
-                      {project.techStack && project.techStack.length > 4 && (
-                        <Badge variant="outline" className="text-xs glass animate-fade-in badge-mobile">
-                          +{project.techStack.length - 4}
-                        </Badge>
-                      )}
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {project.techStack && project.techStack.slice(0, 4).map((tech: string, idx: number) => (
+                          <Badge key={idx} variant="outline" className="text-xs glass animate-fade-in badge-mobile" style={{ animationDelay: `${idx * 0.1}s` }}>
+                            {tech}
+                          </Badge>
+                        ))}
+                        {project.techStack && project.techStack.length > 4 && (
+                          <Badge variant="outline" className="text-xs glass animate-fade-in badge-mobile">
+                            +{project.techStack.length - 4}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  </div>
                 </Card>
               ))}
             </div>

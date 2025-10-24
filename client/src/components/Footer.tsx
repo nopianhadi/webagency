@@ -99,6 +99,18 @@ export default function Footer() {
                   </a>
                 </Button>
               </div>
+              <div className="pt-3">
+                <Button
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md"
+                  asChild
+                  data-testid="button-contact-us"
+                >
+                  <a href="/contact">
+                    Hubungi Kami
+                  </a>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
